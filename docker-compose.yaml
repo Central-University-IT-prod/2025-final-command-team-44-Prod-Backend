@@ -1,0 +1,79 @@
+
+networks:
+  testnet:
+
+services:
+  tunnel:
+    image: yuccastream/tuna
+    command: http app:8080 --subdomain=${DOMAIN}
+    environment:
+      - TUNA_TOKEN=REDACTED
+    depends_on:
+      - app
+    networks:
+      - testnet
+  
+  app:
+    restart: unless-stopped
+
+    build:
+      context: ./app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+      - minio
+    networks:
+      - testnet
+    environment:
+      - ENGINE=postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}
+      - WEBHOOK_HOST=${WEBHOOK_HOST}
+      - HOST=${HOST}
+      - RESET=${RESET:-0}
+      - DEV_MODE=${DEV_MODE}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - PYTHONUNBUFFERED=1
+
+      - MINIO_ROOT_USER=minio
+      - MINIO_ROOT_PASSWORD=minio123
+      - MINIO_URL=http://minio:9000
+
+  postgres:
+    image: postgres:16.6-alpine
+    container_name: postgres
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 2048M
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - PGPORT=${POSTGRES_PORT}
+      - POSTGRESQL_CONF="transaction_isolation='serializable'"
+    networks:
+      - testnet
+
+  minio:
+    image: minio/minio
+    restart: always
+    volumes:
+      - ./storage:/storage
+    environment:
+      - MINIO_ROOT_USER=minio
+      - MINIO_ROOT_PASSWORD=minio123
+    command: server /storage --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+    - testnet
+
+volumes:
+  postgres-data:

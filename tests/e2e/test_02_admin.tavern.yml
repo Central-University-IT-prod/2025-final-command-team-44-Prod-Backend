@@ -1,0 +1,205 @@
+test_name: Админка
+
+stages:
+  - name: "Регистрация в админку"
+    request:
+      url: "{BASE_URL}/admins/auth/sign-up"
+      method: POST
+      json:
+        login: "TBank"
+        password: "12345"
+    response:
+      status_code: 200
+      save:
+        json:
+          auth_1_token: token
+
+  - name: "Регистрация в админку: Дубликат логина"
+    request:
+      url: "{BASE_URL}/admins/auth/sign-up"
+      method: POST
+      json:
+        login: "TBank"
+        password: "12345"
+    response:
+      status_code: 409
+
+  - name: "Вход в админку: нет аккаунта"
+    request:
+      url: "{BASE_URL}/admins/auth/sign-in"
+      method: POST
+      json:
+        login: "TBankввв"
+        password: "12345"
+    response:
+      status_code: 401
+
+  - name: "Вход в админку"
+    request:
+      url: "{BASE_URL}/admins/auth/sign-in"
+      method: POST
+      json:
+        login: "TBank"
+        password: "12345"
+    response:
+      status_code: 200
+
+  - name: "Получение пользователя админа"
+    request:
+      url: "{BASE_URL}/admins/me"
+      method: GET
+      headers:
+        Authorization: "Bearer {auth_1_token}"
+    response:
+      status_code: 200
+
+  - name: "Некорректная ссылка"
+    request:
+      url: "{BASE_URL}/admins/mee"
+      method: GET
+      headers:
+        Authorization: "Bearer {auth_1_token}"
+    response:
+      status_code: 404
+
+  - name: "Создать локацию"
+    request:
+      url: "{BASE_URL}/admins/location"
+      method: POST
+      headers:
+        Authorization: "Bearer {auth_1_token}"
+      json:
+        name: "TSpace"
+        address: "Пермь"
+    response:
+      status_code: 201
+      save:
+        json:
+          created_location_id: id
+
+  - name: "Удалить локацию: нет прав"
+    request:
+      url: "{BASE_URL}/admins/location/{created_location_id}"
+      method: DELETE
+      headers:
+        Authorization: "Bearer {auth_1_token}11"
+    response:
+      status_code: 401
+
+  - name: "Удалить локацию"
+    request:
+      url: "{BASE_URL}/admins/location/{created_location_id}"
+      method: DELETE
+      headers:
+        Authorization: "Bearer {auth_1_token}"
+    response:
+      status_code: 204
+
+  - name: "Создать локацию"
+    request:
+      url: "{BASE_URL}/admins/location"
+      method: POST
+      headers:
+        Authorization: "Bearer {auth_1_token}"
+      json:
+        name: "TSpace"
+        address: "Грузинский вал 7"
+    response:
+      status_code: 201
+      save:
+        json:
+          created_location_id: id
+
+  - name: "Получить локацию"
+    request:
+      url: "{BASE_URL}/admins/location/{created_location_id}"
+      method: GET
+      headers:
+        Authorization: "Bearer {auth_1_token}"
+    response:
+      status_code: 200
+      json:
+        id: "{created_location_id}"
+
+  - name: "Получить локацию: нет доступа"
+    request:
+      url: "{BASE_URL}/admins/location/{created_location_id}"
+      method: GET
+      headers:
+        Authorization: "Bearer {auth_1_token}11"
+    response:
+      status_code: 401
+
+  - name: "Обновление локации"
+    request:
+      url: "{BASE_URL}/admins/location/{created_location_id}"
+      method: PUT
+      json:
+        name: "TSpace"
+        address: "Грузинский вал 7"
+        open_hour: 0
+        close_hour: 24
+      headers:
+        Authorization: "Bearer {auth_1_token}"
+    response:
+      status_code: 200
+
+  - name: "Получения пустого списка мест"
+    request:
+      url: "{BASE_URL}/location/{created_location_id}/tables"
+      method: GET
+      headers:
+        Authorization: "Bearer {auth_1_token}"
+    response:
+      status_code: 200
+      json: []
+
+  - name: "Загрузка изображения"
+    request:
+      url: "{BASE_URL}/admins/location/{created_location_id}/svg"
+      method: PUT
+      headers:
+        Authorization: "Bearer {auth_1_token}"
+        Content-Type: multipart/form-data
+        Content-Disposition: form-data; name="svg_file"
+      files:
+        file: "./data/test-view.svg"
+    response:
+      status_code: 200
+
+  - name: "Повторная загрузка изображения"
+    request:
+      url: "{BASE_URL}/admins/location/{created_location_id}/svg"
+      method: PUT
+      headers:
+        Authorization: "Bearer {auth_1_token}"
+        Content-Type: multipart/form-data
+        Content-Disposition: form-data; name="svg_file"
+      files:
+        file: "./data/test-view.svg"
+    response:
+      status_code: 200
+
+  - name: "Получения списка локаций"
+    request:
+      url: "{BASE_URL}/admins/location/all"
+      method: GET
+      headers:
+        Authorization: "Bearer {auth_1_token}"
+    response:
+      status_code: 200
+
+  - name: "Получения списка мест"
+    request:
+      url: "{BASE_URL}/location/{created_location_id}/tables"
+      method: GET
+      headers:
+        Authorization: "Bearer {auth_1_token}"
+    response:
+      status_code: 200
+      headers:
+        content-type: application/json
+      save:
+        json:
+          table_1_name: table_name
+          table_1_id: id

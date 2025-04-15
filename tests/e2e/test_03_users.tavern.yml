@@ -1,0 +1,178 @@
+test_name: Пользователи
+
+stages:
+  - name: "Получение профиля"
+    request:
+      url: "{BASE_URL}/users/me"
+      method: GET
+      headers:
+        Authorization: "Bearer {USER_1}"
+    response:
+      status_code: 200
+
+  - name: "Получения списка локаций"
+    request:
+      url: "{BASE_URL}/location/all"
+      method: GET
+    response:
+      status_code: 200
+      save:
+        json:
+          location_1_id: "[0].id"
+
+  - name: "Получения списка мест локации"
+    request:
+      url: "{BASE_URL}/location/{location_1_id}/tables"
+      method: GET
+    response:
+      status_code: 200
+      save:
+        json:
+          table_1_name: "[0].table_name"
+          table_1_id: "[0].id"
+
+  - name: "Сделать бронь"
+    request:
+      url: "{BASE_URL}/users/booking/{location_1_id}/{table_1_name}"
+      method: POST
+      headers:
+        Authorization: "Bearer {USER_1}"
+      json:
+        time_start: "2025-03-05T11:00:00.000Z"
+        hours: "1"
+        comment: "comment"
+        features: []
+        people_amount: 2
+    response:
+      status_code: 201
+      save:
+        json:
+          booking_1_id: id
+
+  - name: "Получить брони"
+    request:
+      url: "{BASE_URL}/users/booking/my"
+      method: GET
+      headers:
+        Authorization: "Bearer {USER_1}"
+      json:
+        - booking_id
+    response:
+      status_code: 200
+
+  - name: "Обновить брони"
+    request:
+      url: "{BASE_URL}/users/booking/{booking_1_id}"
+      method: PUT
+      headers:
+        Authorization: "Bearer {USER_1}"
+      json:
+        time_start: "2025-03-05T11:00:00.000Z"
+        hours: "2"
+        comment: "comment"
+        features: []
+        people_amount: 2
+    response:
+      status_code: 200
+      save:
+        json:
+          saved_booking_id: id
+
+  - name: "Сделать бронь повторно"
+    request:
+      url: "{BASE_URL}/users/booking/{location_1_id}/{table_1_name}"
+      method: POST
+      headers:
+        Authorization: "Bearer {USER_1}"
+      json:
+        time_start: "2025-03-05T11:00:00.000Z"
+        hours: "1"
+        comment: "comment"
+        features: []
+    response:
+      status_code: 400
+
+  - name: "Сделать бронь: та же локация"
+    request:
+      url: "{BASE_URL}/users/booking/{location_1_id}/{table_1_name}"
+      method: POST
+      headers:
+        Authorization: "Bearer {USER_1}"
+      json:
+        time_start: "2025-03-05T15:00:00.000Z"
+        hours: "6"
+        comment: "comment"
+        features: []
+        people_amount: 2
+    response:
+      status_code: 400
+
+  - name: "Сделать бронь: превысить лимит"
+    request:
+      url: "{BASE_URL}/users/booking/{location_1_id}/{table_1_name}"
+      method: POST
+      headers:
+        Authorization: "Bearer {USER_1}"
+      json:
+        time_start: "2025-03-05T15:00:00.000Z"
+        hours: "10"
+        comment: "comment"
+        features: []
+    response:
+      status_code: 400
+
+  - name: "Получить список участников брони"
+    request:
+      url: "{BASE_URL}/users/booking/members/{saved_booking_id}"
+      method: GET
+      headers:
+        Authorization: "Bearer {USER_1}"
+    response:
+      status_code: 200
+      json:
+        - status: "creator"
+
+  - name: "Получить брони"
+    request:
+      url: "{BASE_URL}/users/booking/my"
+      method: GET
+      headers:
+        Authorization: "Bearer {USER_2}"
+    response:
+      status_code: 200
+      json: []
+
+  - name: "Присоединение к брони"
+    request:
+      url: "{BASE_URL}/users/booking/join"
+      method: POST
+      headers:
+        Authorization: "Bearer {USER_2}"
+      json:
+        booking_id: "{saved_booking_id}"
+    response:
+      status_code: 200
+
+  - name: "Получить список участников брони"
+    request:
+      url: "{BASE_URL}/users/booking/members/{saved_booking_id}"
+      method: GET
+      headers:
+        Authorization: "Bearer {USER_1}"
+    response:
+      status_code: 200
+      json:
+        - status: "creator"
+        - status: "member"
+
+  - name: "Получить список занятых мест"
+    request:
+      url: "{BASE_URL}/location/{location_1_id}/bookings"
+      method: POST
+      headers:
+        Authorization: "Bearer {USER_1}"
+      json:
+        time_start: "2025-03-04T23:00:00.000Z"
+        hours: "23"
+    response:
+      status_code: 200

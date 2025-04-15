@@ -1,0 +1,12 @@
+variables:
+  BASE_URL: "http://localhost:8080/api"
+  USER_1: "749234118"
+  USER_2: "7485502073"
+  INVALID_TOKEM: "Bearer INVALID"
+  auth_1_token: ""
+  created_location_id: ""
+  table_1_name: ""
+  table_1_id: ""
+  location_1_id: ""
+  saved_booking_id: ""
+  booking_1_id: ""

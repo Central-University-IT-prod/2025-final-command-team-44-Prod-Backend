@@ -1,0 +1,51 @@
+
+networks:
+  testing:
+
+services:  
+  app:
+    restart: unless-stopped
+
+    build:
+      context: ../../app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - test-db
+      - minio
+    networks:
+      - testing
+    env_file: ".testenv"
+
+  test-db:
+    image: postgres:16.6-alpine
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.2"
+          memory: 2048M
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=test
+      - POSTGRES_USER=test
+      - POSTGRES_PASSWORD=test
+      - PGPORT=5432
+    networks:
+      - testing
+
+  minio:
+    image: minio/minio
+    restart: always
+    volumes:
+      - ./storage:/storage
+    environment:
+      - MINIO_ROOT_USER=minio
+      - MINIO_ROOT_PASSWORD=minio123
+    command: server /storage --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+    - testing
